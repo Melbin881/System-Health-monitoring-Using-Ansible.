@@ -22,7 +22,7 @@ Note: This script assumes a Linux-based operating system. Adjustments may be req
 
 Example usage:
 ```
-ansible-playbook system_health_monitoring.yml -i inventory.ini
+ansible-playbook systemhealthmonitoring.yml -i inventory.ini
 ```
 
 We hope this script helps you effectively monitor the health of your system and mitigate potential issues.
