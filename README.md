@@ -1,6 +1,4 @@
 # System-Health-monitoring-Using-Ansible.
-System Health Monitoring Ansible 
-Title: System Health Monitoring Ansible Script
 
 Description:
 This Ansible script provides health monitoring capabilities for a system, allowing you to monitor various aspects such as hard disk utilization, RAM and CPU utilization, and network utilization. The script includes alerting mechanisms to notify you in case of any issues.
@@ -22,7 +20,7 @@ Note: This script assumes a Linux-based operating system. Adjustments may be req
 
 Example usage:
 ```
-ansible-playbook systemhealthmonitoring.yml -i inventory.ini
+ansible-playbook -i inventory.yml systemhealthmonitoring.yml
 ```
 
 We hope this script helps you effectively monitor the health of your system and mitigate potential issues.
