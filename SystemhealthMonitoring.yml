@@ -88,3 +88,16 @@
         msg: "Alert! Unusual traffic activity detected for process {{ item.key }}."
       loop: "{{ process_connections | dict2items }}"
       when: item.value > 100
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+  
