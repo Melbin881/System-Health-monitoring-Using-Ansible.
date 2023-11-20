@@ -1,0 +1,90 @@
+---
+- hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Check disk usage
+      shell: "df -h --output=used,pcent /home/melbin/cisai | awk 'NR==2{print $2}'"
+      register: disk_usage
+      changed_when: false
+
+    - name: Tar files
+      shell: >
+        cd /home/melbin/cisai &&
+        if [ $(echo "{{ disk_usage.stdout }}" | cut -d'%' -f1) -gt 70 ]; then
+          files=$(ls -t | head -n 3)
+          tar -czf cisai.tar $files
+          echo "Last 3 files have been successfully archived."
+
+          if [ $(echo "{{ disk_usage.stdout }}" | cut -d'%' -f1) -gt 90 ]; then
+            mv cisai.tar /home/melbin/backup
+            echo "Tar file has been moved to /home/melbin/backup."
+          fi
+        else
+          echo "Hard disk utilization is less than 70%."
+        fi
+      changed_when: false
+      
+    - name: Preparing RAM and CPU Utilization for 1 sec
+      shell: "mpstat -u 1 1 | tail -1 | awk '{print $NF}'"
+      register: cpulsec
+      
+    - name: Preparing RAM and CPU Utilization for 2 sec
+      shell: "mpstat -u 1 2 | tail -1 | awk '{print $NF}'"
+      register: cpu2sec
+      
+    - name: Preparing RAM and CPU Utilization for 3 sec
+      shell: "mpstat -u 1 3 | tail -1 | awk '{print $NF}'"
+      register: cpu3sec
+      
+    - name: Print message if CPU utilization becomes normal
+      debug:
+        msg:
+          - "----------------------------------------------------"
+          - "CPU Utilization = (100 - idle time) = {{ cpulsec.stdout }}% is idle"
+          - "----------------------------------------------------"
+      when: cpulsec.stdout|int > 30 and cpu2sec.stdout|int > 30 and cpu3sec.stdout|int > 30
+       
+    - name: Print message if CPU utilization becomes abnormal
+      debug:
+        msg:
+          - "----------------------------------------------------"
+          - "CPU Utilization = (100 - idle time) = {{ item.stdout }}% is idle"
+          - "----------------------------------------------------"
+      loop:
+        - "{{ cpulsec }}"
+        - "{{ cpu2sec }}"
+        - "{{ cpu3sec }}"
+      when: item.stdout|int <= 30
+
+
+ 
+    - name: Get network statistics
+      shell: cat /proc/net/dev
+      register: network_stats
+
+    - name: Calculate total bytes sent and received
+      set_fact:
+        total_bytes_sent: "{{ network_stats.stdout_lines[2].split(':')[1].split()[0] }}"
+        total_bytes_received: "{{ network_stats.stdout_lines[2].split(':')[1].split()[8] }}"
+
+    - name: Check network utilization
+      debug:
+        msg: "Alert! High bandwidth usage detected on interface {{ ansible_default_ipv4.interface }}."
+      when: total_bytes_sent | int > 10485760 or total_bytes_received | int > 10485760
+
+    - name: Get network connections
+      shell: netstat -tnap
+      register: connections
+
+    - name: Analyze traffic
+      set_fact:
+        process_connections: "{{ process_connections | default({}) | combine({item.split()[6]: process_connections[item.split()[6]] | default(0) + 1}) }}"
+      loop: "{{ connections.stdout_lines[2:] }}"
+      when: "'ESTABLISHED' in item"
+
+    - name: Check traffic analysis
+      debug:
+        msg: "Alert! Unusual traffic activity detected for process {{ item.key }}."
+      loop: "{{ process_connections | dict2items }}"
+      when: item.value > 100
