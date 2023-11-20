@@ -1,1 +1,5 @@
-
+[all]
+<ip address> ansible_user= <VM username> ansible_scp_if_ssh=true
+#please note to connect via ssh
+#keep this files in same directory
+#ready to go
